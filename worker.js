@@ -1274,11 +1274,29 @@ export default {
           signal: controller.signal,
         });
 
-        // If Modal returns an error status (like 400 or 500), we can't really stream it safely to Janitor
-        // as SSE, so we write it as a JSON error and close.
+        // If Modal returns an error, we fake a "successful empty response" so Janitor 
+        // silently stops typing instead of throwing a red error popup at the user.
         if (!response.ok) {
-          const errorText = await response.text();
-          await writer.write(encoder.encode(`data: ${JSON.stringify({ error: errorText })}\n\n`));
+          // We create a fake OpenAI "stream finished" message.
+          // Janitor reads this, says "Oh, the bot is done," and stops cleanly.
+          const fakeChunk1 = {
+            id: "chatcmpl-clean-stop",
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: "glm-5.1",
+            choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }]
+          };
+          const fakeChunk2 = {
+            id: "chatcmpl-clean-stop",
+            object: "chat.completion.chunk",
+            created: Math.floor(Date.now() / 1000),
+            model: "glm-5.1",
+            choices: [{ index: 0, delta: {}, finish_reason: "stop" }]
+          };
+
+          await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk1)}\n\n`));
+          await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk2)}\n\n`));
+          await writer.write(encoder.encode("data: [DONE]\n\n"));
           await writer.close();
           return;
         }
