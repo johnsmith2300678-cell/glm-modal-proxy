@@ -16,6 +16,11 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json({ limit: "10mb" }));
 
+// ✅ ADDED FOR FLY.IO HEALTH CHECKS
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 function extract(text, keys) {
   for (const key of keys) {
     const pattern = new RegExp(
@@ -1340,18 +1345,6 @@ app.all("*", async (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 });
-
-// ─── KEEP ALIVE ───────────────────────────────────────────────────────────────
-const SELF_URL = process.env.RENDER_EXTERNAL_URL || "";
-if (SELF_URL) {
-  setInterval(() => {
-    https.get(SELF_URL, (res) => {
-      console.log("Keep-alive ping:", res.statusCode);
-    }).on("error", (err) => {
-      console.error("Keep-alive failed:", err.message);
-    });
-  }, 10 * 60 * 1000);
-}
 
 app.listen(process.env.PORT || 3000, () =>
   console.log("Proxy running on port", process.env.PORT || 3000)
