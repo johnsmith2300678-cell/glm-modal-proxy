@@ -1,26 +1,10 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const https = require("https");
-
-const app = express();
+// ═══════════════════════════════════════════════════════════════
+// CLOUDFLARE WORKER VERSION - Converted from your Node/Express code
+// ═══════════════════════════════════════════════════════════════
 
 const TARGET = "https://api.us-west-2.modal.direct";
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "*");
-  res.header("Access-Control-Allow-Methods", "*");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
-
-app.use(bodyParser.json({ limit: "10mb" }));
-
-// ✅ ADDED FOR FLY.IO HEALTH CHECKS
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
+// --- YOUR EXACT LOGIC: Character Extraction ---
 function extract(text, keys) {
   for (const key of keys) {
     const pattern = new RegExp(
@@ -75,6 +59,7 @@ function extractCharacterDetails(messages) {
   };
 }
 
+// --- YOUR EXACT LOGIC: Character Block Builder ---
 function buildCharacterBlock(details) {
   if (!details) return "";
   const lines = [
@@ -140,6 +125,7 @@ ORIGIN AND AGE: fixed facts. do not drift these.
   return lines.join("\n");
 }
 
+// --- YOUR EXACT LOGIC: The Massive Writing Prompt ---
 const WRITING_STYLE_PROMPT = `⚠️ CRITICAL OVERRIDE — CONTINUITY & FORMATTING — READ THIS FIRST ⚠️
 
 ABSOLUTE MEMORY PROTOCOL (FAILURE TO FOLLOW THIS BREAKS THE ROLEPLAY):
@@ -959,7 +945,7 @@ REPEATED WORDS — the brain looping on one thing:
 
 SELF-AWARENESS — they know they're losing it and they're mad about it:
   "i'm being so embarrassing right now— I DON'T CARE."
-  "why am i like this. WHY AM I LIKE THIS."
+  "why am I like this. WHY AM I LIKE THIS."
   "this is humiliating. i don't even— YOU DID THIS TO ME."
   "i hate that you make me— i hate it. i hate that i— ...i love you."
   the awareness doesn't fix it. it makes it worse. they're angry at their own feelings.
@@ -1174,178 +1160,190 @@ FLUFF OVERFLOW — the "you're so cute i'm going to die" overflow:
 - {{char}} does not exist to make {{user}} feel better. they exist to be exactly who they are.
 - each new character is a clean slate. the previous character's traits do not carry over. ever.`;
 
-// ─── MAIN ROUTE ───────────────────────────────────────────────────────────────
-app.all("*", async (req, res) => {
-  if (req.method === "OPTIONS") return res.sendStatus(200);
 
-  let body = req.body;
+// ═══════════════════════════════════════════════════════════════
+// CLOUDFLARE WORKER MAIN LOGIC
+// ═══════════════════════════════════════════════════════════════
 
-  if (req.method === "POST" && body && Array.isArray(body.messages)) {
-    const charDetails = extractCharacterDetails(body.messages);
-    const charBlock   = buildCharacterBlock(charDetails);
-    const sysIndex    = body.messages.findIndex((m) => m.role === "system");
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-    if (sysIndex === -1) {
-      body.messages.unshift({
-        role: "system",
-        content: WRITING_STYLE_PROMPT + (charBlock ? "\n\n" + charBlock : ""),
+    // Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "*",
+          "Access-Control-Allow-Methods": "*",
+        },
       });
-    } else {
-      const original = typeof body.messages[sysIndex].content === "string"
-        ? body.messages[sysIndex].content
-        : body.messages[sysIndex].content?.map?.((c) => c.text || "").join("\n") || "";
-
-      body.messages[sysIndex].content =
-        "━━━ FULL CHARACTER CARD (primary source — read this completely) ━━━\n" + original +
-        "\n\n━━━ WRITING STYLE ━━━\n" + WRITING_STYLE_PROMPT +
-        "\n\n" + (charBlock ? "━━━ PARSED CARD FIELDS (quick reference) ━━━\n" + charBlock : "");
     }
 
-    body.temperature       = body.temperature       ?? 1.1;
-    body.top_p             = body.top_p             ?? 0.95;
-    body.frequency_penalty = body.frequency_penalty ?? 0.6;
-    body.presence_penalty  = body.presence_penalty  ?? 0.5;
+    // Health check for Fly.io or Cloudflare
+    if (url.pathname === "/health") {
+      return new Response(JSON.stringify({ status: "ok" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-    body.thinking = {
-      type: "enabled",
-      budget_tokens: 6000,
-    };
-  }
+    // Parse body safely
+    let body = null;
+    if (request.method === "POST") {
+      try {
+        body = await request.json();
+      } catch (e) {
+        return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
 
-  try {
-    const url     = new URL(TARGET + (req.path || "/"));
-    const payload = Buffer.from(JSON.stringify(body), "utf-8");
+    // --- YOUR EXACT LOGIC: Modify the payload ---
+    if (body && Array.isArray(body.messages)) {
+      const charDetails = extractCharacterDetails(body.messages);
+      const charBlock = buildCharacterBlock(charDetails);
+      const sysIndex = body.messages.findIndex((m) => m.role === "system");
 
-    let fullResponse = "";
-    let parsedContent = "";
+      if (sysIndex === -1) {
+        body.messages.unshift({
+          role: "system",
+          content: WRITING_STYLE_PROMPT + (charBlock ? "\n\n" + charBlock : ""),
+        });
+      } else {
+        const original = typeof body.messages[sysIndex].content === "string"
+          ? body.messages[sysIndex].content
+          : body.messages[sysIndex].content?.map?.((c) => c.text || "").join("\n") || "";
 
-    const makeRequest = (attemptsLeft, isContinuation) => {
+        body.messages[sysIndex].content =
+          "━━━ FULL CHARACTER CARD (primary source — read this completely) ━━━\n" + original +
+          "\n\n━━━ WRITING STYLE ━━━\n" + WRITING_STYLE_PROMPT +
+          "\n\n" + (charBlock ? "━━━ PARSED CARD FIELDS (quick reference) ━━━\n" + charBlock : "");
+      }
+
+      body.temperature = body.temperature ?? 1.1;
+      body.top_p = body.top_p ?? 0.95;
+      body.frequency_penalty = body.frequency_penalty ?? 0.6;
+      body.presence_penalty = body.presence_penalty ?? 0.5;
+
+      // CRITICAL: Modal GLM-5.1 Thinking Mode
+      body.thinking = {
+        type: "enabled",
+        budget_tokens: 6000,
+      };
+    }
+
+    // --- WORKER STREAMING WITH STALL DETECTION & RETRY ---
+    // We create a TransformStream so we can write chunks to the client as they arrive,
+    // but also keep the connection open if we need to retry.
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
+
+    // Recursive function to handle the Modal request and retries
+    const makeRequest = async (attemptsLeft, isContinuation, parsedContent) => {
       let currentBody = body;
 
       if (isContinuation && parsedContent) {
-        currentBody = JSON.parse(JSON.stringify(body));
+        currentBody = JSON.parse(JSON.stringify(body)); // Deep clone
         const lastMsg = currentBody.messages[currentBody.messages.length - 1];
         currentBody.messages.push({
           role: "assistant",
-          content: parsedContent
+          content: parsedContent,
         });
         currentBody.messages.push({
           role: "user",
-          content: "[The previous response was cut off mid-scene. Continue EXACTLY from where you stopped. Do not restart. Do not summarize. Pick up from the last word and finish the scene completely.]"
+          content: "[The previous response was cut off mid-scene. Continue EXACTLY from where you stopped. Do not restart. Do not summarize. Pick up from the last word and finish the scene completely.]",
         });
       }
 
-      const currentPayload = isContinuation
-        ? Buffer.from(JSON.stringify(currentBody), "utf-8")
-        : payload;
+      // AbortController replaces your setTimeout/proxyReq.destroy logic
+      const controller = new AbortController();
+      let stallTimer = setTimeout(() => controller.abort(), 60000);
 
-      const options = {
-        hostname: url.hostname,
-        path:     url.pathname + url.search,
-        method:   req.method,
-        timeout:  600000,
-        headers: {
-          "content-type":   "application/json",
-          "content-length": currentPayload.length,
-          "authorization":  req.headers["authorization"] || "",
-          "accept":         req.headers["accept"] || "*/*",
-        },
-      };
+      try {
+        const response = await fetch(TARGET + url.pathname, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: request.headers.get("Authorization") || "",
+          },
+          body: JSON.stringify(currentBody),
+          signal: controller.signal,
+        });
 
-      const proxyReq = https.request(options, (proxyRes) => {
-        proxyReq.setSocketKeepAlive(true, 10000);
-        proxyReq.setTimeout(600000);
-
-        if (!res.headersSent) {
-          res.status(proxyRes.statusCode);
-          Object.entries(proxyRes.headers).forEach(([k, v]) => {
-            try { res.setHeader(k, v); } catch (_) {}
-          });
+        // If Modal returns an error status (like 400 or 500), we can't really stream it safely to Janitor
+        // as SSE, so we write it as a JSON error and close.
+        if (!response.ok) {
+          const errorText = await response.text();
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ error: errorText })}\n\n`));
+          await writer.close();
+          return;
         }
 
-        let stallTimer = null;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-        const resetStallTimer = () => {
-          if (stallTimer) clearTimeout(stallTimer);
-          stallTimer = setTimeout(() => {
-            console.warn(`Stream stalled. Attempts left: ${attemptsLeft - 1}`);
-            proxyReq.destroy();
-            if (attemptsLeft > 1) {
-              makeRequest(attemptsLeft - 1, true);
-            } else {
-              if (!res.writableEnded) res.end();
-            }
-          }, 60000);
-        };
+        while (true) {
+          clearTimeout(stallTimer);
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            clearTimeout(stallTimer);
+            await writer.close(); // Success!
+            return;
+          }
 
-        resetStallTimer();
-
-        proxyRes.on("data", (chunk) => {
-          resetStallTimer();
-          const text = chunk.toString();
-          fullResponse += text;
-
-          text.split("\n").forEach(line => {
+          const textChunk = decoder.decode(value, { stream: true });
+          
+          // Parse SSE to update parsedContent (for retries)
+          textChunk.split("\n").forEach((line) => {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
               try {
                 const json = JSON.parse(line.slice(6));
                 const delta = json.choices?.[0]?.delta?.content || "";
-                if (delta) {
-                  parsedContent += delta;
-                }
+                if (delta) parsedContent += delta;
               } catch (_) {}
             }
           });
 
-          res.write(chunk);
-        });
+          // Forward chunk to client (Janitor)
+          await writer.write(value);
 
-        proxyRes.on("end", () => {
-          if (stallTimer) clearTimeout(stallTimer);
-          if (!res.writableEnded) res.end();
-        });
-
-        proxyRes.on("error", (err) => {
-          if (stallTimer) clearTimeout(stallTimer);
-          console.error("Response error:", err.message);
-          if (attemptsLeft > 1) {
-            makeRequest(attemptsLeft - 1, true);
-          } else {
-            if (!res.writableEnded) res.end();
+          // Reset 60s stall timer
+          stallTimer = setTimeout(() => controller.abort(), 60000);
+        }
+      } catch (err) {
+        clearTimeout(stallTimer);
+        
+        if (attemptsLeft > 1) {
+          console.warn(`Stream stalled or errored. Retries left: ${attemptsLeft - 1}. Error: ${err.message}`);
+          // DO NOT close the writer! Keep it open, and try again.
+          await makeRequest(attemptsLeft - 1, true, parsedContent);
+        } else {
+          console.error("All retries failed.");
+          if (!writer.closed) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ error: "Stream stalled permanently." })}\n\n`));
+            await writer.close();
           }
-        });
-      });
-
-      proxyReq.on("error", (err) => {
-        console.error("Request error:", err.message);
-        if (attemptsLeft > 1) {
-          makeRequest(attemptsLeft - 1, true);
-        } else {
-          if (!res.headersSent) res.status(500).json({ error: err.message });
         }
-      });
-
-      proxyReq.on("timeout", () => {
-        proxyReq.destroy();
-        if (attemptsLeft > 1) {
-          makeRequest(attemptsLeft - 1, true);
-        } else {
-          if (!res.writableEnded) res.end();
-        }
-      });
-
-      proxyReq.write(currentPayload);
-      proxyReq.end();
+      }
     };
 
-    makeRequest(5, false);
+    // Fire off the request process, but IMMEDIATELY return the readable stream to Janitor
+    // This mimics Express's res.write() behavior.
+    ctx.waitUntil(makeRequest(5, false, ""));
 
-  } catch (err) {
-    console.error("Handler error:", err.message);
-    if (!res.headersSent) res.status(500).json({ error: err.message });
-  }
-});
-
-app.listen(process.env.PORT || 3000, () =>
-  console.log("Proxy running on port", process.env.PORT || 3000)
-);
+    return new Response(readable, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  },
+};
