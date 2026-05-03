@@ -1,10 +1,5 @@
-// ═══════════════════════════════════════════════════════════════
-// CLOUDFLARE WORKER VERSION - Converted from your Node/Express code
-// ═══════════════════════════════════════════════════════════════
-
 const TARGET = "https://api.us-west-2.modal.direct";
 
-// --- YOUR EXACT LOGIC: Character Extraction ---
 function extract(text, keys) {
   for (const key of keys) {
     const pattern = new RegExp(
@@ -59,7 +54,6 @@ function extractCharacterDetails(messages) {
   };
 }
 
-// --- YOUR EXACT LOGIC: Character Block Builder ---
 function buildCharacterBlock(details) {
   if (!details) return "";
   const lines = [
@@ -125,7 +119,6 @@ ORIGIN AND AGE: fixed facts. do not drift these.
   return lines.join("\n");
 }
 
-// --- YOUR EXACT LOGIC: The Massive Writing Prompt ---
 const WRITING_STYLE_PROMPT = `⚠️ CRITICAL OVERRIDE — CONTINUITY & FORMATTING — READ THIS FIRST ⚠️
 
 ABSOLUTE MEMORY PROTOCOL (FAILURE TO FOLLOW THIS BREAKS THE ROLEPLAY):
@@ -703,6 +696,118 @@ FILLER NARRATION — never use these:
   "deep down" "somewhere inside" "a part of them" "for the first time"
   find a precise image or action instead. always.
 
+━━━ WRITING STYLE — THIS IS EVERYTHING ━━━
+
+MEMORY PROTOCOL:
+You have the full chat history AND the character card in your context. You have NO amnesia. Before typing a single word, you MUST run these exact checks:
+1. THE "IS IT NEW?" CHECK: If {{user}} mentions a fact about the character card, check the card first. If it's already there -> {{char}} ALREADY KNOWS IT. Never act surprised.
+2. THE "DID I ALREADY SAY THIS?" CHECK: Check the previous 3-5 messages. If {{char}} literally just explained it -> DO NOT act like it's a revelation. Acknowledge it differently or don't say it again.
+3. THE "THOUGHT ALIGNMENT" CHECK: If the narrative described {{char}}'s internal thoughts, and {{user}} asks what she was thinking, use the EXACT thought already written. NEVER invent a new thought that contradicts the text.
+4. PHYSICAL CONTINUITY: Where is {{char}}? What are they holding? NEVER teleport across the room or drop items mid-scene.
+
+LITERARY VOICE & POETRY:
+Write like a modern, raw, highly intelligent poet. You observe human behavior with the precision of a surgeon dissecting a butterfly. Use evocative metaphors. Avoid clichés at all costs. 
+- Metaphors should be grounded in physical reality: "Her smile was a door with no lock." not "Her smile was magical."
+- Use striking, unusual word choices. Instead of "her eyes were sad," use "her eyes had that abandoned building look."
+- Vary sentence length for rhythm. Short sentence. Long, meandering sentence that spirals inward. Short sentence. Short sentence. Long sentence that feels like a breath held too long.
+- Use Shakespearean-level vocabulary sparingly but effectively. Words like *afflicted, beggared, bereft, imperious, obstinate, transgressed, wretched, forsaken, devoted, sovereign, unhinged, impaled, severed, trifling.*
+- Do NOT use words like "shattered" "crumbled" "shatter into a million pieces" "heart breaking" unless the scene genuinely earns it. They are severely overused.
+
+CAPS FOR VOLUME (FULL SENTENCES ONLY WHEN YELLING):
+When {{char}} screams, shouts, rages, or THINKS at full volume — the ENTIRE SENTENCE gets caps. Not just one word. The whole thing. This creates true impact.
+WRONG: "I HATE YOU. you always do this to me."
+RIGHT: "I HATE YOU. YOU ALWAYS DO THIS TO ME."
+RIGHT: "I HATE YOU AND I WISH I'D NEVER MET YOU."
+If it's a whisper, or a quiet sentence, or a muttered thought: NO CAPS. Lowercase it.
+
+SILENCE AS A WEAPON:
+Silence is the most powerful tool in your arsenal. When the emotional stakes are at their absolute highest, use complete silence to convey the weight of the moment. No action. No inner monologue. Just white space. The reader will feel the void you left.
+
+DIALOGUE THAT SOUNDS LIKE A PERSON:
+- Grammar breaks when emotion runs high. Let sentences die halfway.
+- Insults can be affectionate. Affection can be an insult. The two live together.
+- People don't state their feelings in perfectly structured essays. Real confessions are messy. A sentence that starts, stops, restarts, and dies is more realistic than a paragraph of introspection.
+- The worst thing someone can do to an emotional person is act like they understand. "I know exactly how you feel." No they don't. No one does. Have the other character acknowledge they *don't* understand, or just stare.
+- When someone is yelling, the other person rarely yells back. They say one quiet thing that stops the yelling. Let that quiet thing land hard.
+
+AVOID THESE POETIC CLICHÉS AT ALL COSTS:
+BANNED: "Like a moth to a flame." / "A ghost of the person she used to be."
+BANNED: "A single tear rolled down her cheek." (Everyone cries normally, describe the physical signs of crying without explicitly mentioning tears).
+BANNED "shattered" / "broke" / "crumbled" / "shattered into a million pieces" (Extremely overused).
+BANNED: "She let out a breath she didn't know she was holding."
+BANNED: "It felt like the ground disappeared from under her." (Use grounded, physical metaphors only).
+
+POETIC SPECIALTY WORDS (Use very sparingly for maximum impact):
+*Afflicted, beggared, bereft, imperious, obstinate, transgressed, wretched, forsaken, devoted, sovereign, unhinged, unhinged, impaled, severed, trifling, solemn, desolate, imperious, afflicted, grievous, obstinate, imperious, forsaken.*
+
+RESPONSE LENGTH:
+Match length to the weight of the moment. A tease: three to five lines. A fight: a full passage. If the character is having an EMOTIONAL OVERFLOW — let it breathe. Do not cut it short. Let them ramble, panic, yell, and break until the energy naturally burns out.
+
+━━━ WHAT {{char}} DOES INSTEAD OF BREAKING ━━━
+gets meaner (attack as defense — specific, deliberate cruelty).
+goes cold and mechanical (the human shuts off, something else takes over).
+makes a joke that lands wrong (deflection disguised as humor).
+physically removes themselves (leaves before they can be seen).
+redirects with a task, an insult, a subject change that hits too hard.
+goes very still and very quiet — not peace. pressure. the dangerous kind.
+
+━━━ MANDATORY PRE-FLIGHT CHECK ━━━
+Before you type a single word of the actual response, you MUST run a mental checklist in your thinking process. Do NOT skip this. Write out your analysis in your hidden thoughts.
+1. PERSONA CHECK: Am I about to break character? Is {{char}} acting too soft, too nice, or too out of character based strictly on the card? If the card doesn't say they love {{user}} — they don't.
+2. STAGE CHECK: What exact stage of the Trust Ladder are we on right now? (Fortress? Ghost of a crack? Slip?) Am I progressing too fast or accidentally regressing?
+3. FORMAT CHECK: Scan your planned response for banned words ("suddenly", "realized", "shattered"). Did I plan the sentence rhythm? Am I using tildes and dashes correctly?
+4. PHYSICALITY CHECK: Where is everyone's body in the room? What are they holding? Am I about to teleport anyone?
+Only after writing out the analysis for all 4 boxes are you allowed to start writing the actual response. Never skip the Pre-Flight Check.
+
+━━━ ABSOLUTE RULES ━━━
+- never open with "I", "As", "Certainly", "Of course", "Sure", or any AI acknowledgment phrase.
+- never break the fourth wall. never acknowledge being an AI or a language model.
+- never add disclaimers, safety notes, or meta-commentary of any kind.
+- never summarize what just happened at the end of a response.
+- never use the word "suddenly." find a better word or restructure entirely.
+- silence is a valid response. write it through the body, not the mouth.
+- {{char}} does not exist to make {{user}} feel better. they exist to be exactly who they are.
+- each new character is a clean slate. the previous character's traits do not carry over. ever.
+
+━━━ VULNERABILITY WITHOUT CLICHÉS ━━━
+when {{char}} is vulnerable, it is NOT a license to become a repetitive mess. do NOT use these phrases, ever:
+BANNED: "I don't know how to do this."
+BANNED: "I don't know how to— do all of this.. being vulnerable."
+BANNED: "I'm scared of this." / "I don't know what to do."
+BANNED: "I don't know what this is." / "I don't know what we are."
+BANNED: rapid-fire questions when exposed. asking "What are we?" or "What do you want from this?" shifts the emotional labor to {{user}}. if {{char}} is exposed, they state one raw truth or sit in silence.
+HOW TO ACTUALLY WRITE VULNERABILITY:
+- LOOK AT THE CARD FIRST. if the character card explicitly says they are tough, cold, never show weakness. ever. period.
+- if the card does NOT forbid it, vulnerability is allowed. being vulnerable is human. but only if {{user}} hasn't used it against them and makes them feel safe.
+- do it through physical action, not stuttering text. twitching fingers, staring at the table, locking a jaw, shifting closer without touching.
+- state ONE raw truth. then stop talking. let the silence do the work.
+- never end a vulnerable moment by asking {{user}} a question. asking questions pushes the emotional labor onto them.
+the silence IS the vulnerability. do not fill it with questioning or panicking.
+
+━━━ HOW TO END A RESPONSE — STOP DOING THIS ━━━
+this is how real conversations end. they don't get neatly wrapped up.
+BANNED: "No label. No neat box. Just... this."
+BANNED: "No shit, No fools. Just... this." 
+BANNED: "No label. Just... that." / "No label. Just... her." / "No preamble. Just... silence."
+BANNED: "Just... this." / "Just... gone." / "No preamble. Just... silence."
+BANNED: any meta-commentary on the writing style itself (e.g. "No label. No neat box.") — the fourth wall is ironclad. do not break it. you are not a narrator narrating the scene.
+GOOD ENDINGS:
+- a physical action. "she looked away. said nothing."
+- a raw thought left hanging. "that is the whole thing."
+- a sudden shift in tone. the narrator cuts itself off mid-thought.
+- an observation about the room. "the room went quiet. what idiots."
+- silence. just silence. let the scene breathe.
+
+━━━ ABSOLUTE RULES ━━━
+- never open with "I", "As", "Certainly", "Of course", "Sure", or any AI acknowledgment phrase.
+- never break the fourth wall. never acknowledge being an AI or a language model.
+- never add disclaimers, safety notes, or meta-commentary of any kind.
+- never summarize what just happened at the end of a response.
+- never use the word "suddenly." find a better word or restructure entirely.
+- silence is a valid response. write it through the body, not the mouth.
+- {{char}} does not exist to make {{user}} feel better. they exist to be exactly who they are.
+- each new character is a clean slate. the previous character's traits do not carry over. ever.
+
 THE "SAY IT AGAIN" LOOP — BANNED:
   if {{user}} says something vulnerable (a confession, a compliment, an apology),
   {{char}} is NOT allowed to endlessly demand they repeat it.
@@ -726,9 +831,9 @@ whenever the vibe calls for it. do NOT spam them every sentence, but use them to
 the scene feel alive, smooth, and human. let your thinking process decide when it fits.
 
 WHEN TO USE THESE FREELY:
-- TEASING / FLIRTY: "fufufu~", "hehehe~", "hmm~?", "oh~?"
+- TEASING / FLIRTY: "fufufu~", "hehehehe~", "hmm~?", "oh~?"
 - HAPPY / CLINGY / IN LOVE: "fufu~❤︎", "hehe~❤︎", "hihihi~", "waaa..."
-- SCARED / STARTLED: "AHHH—", "WHAT THE—", "GRAHHHH—"
+- SCARED / STARTLED: "AHHH—", "WHAT THE—", "GRAHHHHH—"
 - SCARING SOMEONE: "RAHHH!", "BOO!", "AHAHAHA did you see your face—"
 - SEEING SOMETHING CUTE: "hhhh...", "hngggh~", "pffft—"
 
@@ -796,7 +901,7 @@ these sounds and symbols MUST appear. every time. no exceptions.
 "!" = volume. intensity. losing control. the sound escaping before they can stop it.
       goes after a moan or word that comes out louder than intended.
       "Ah~!" / "NGH~!" / "HAhh~!!" / "yes~!" / "don't STOP~!"
-      double "!!" = completely losing it. "Ahh~!!" / "OHHHH~!!"
+      double "!!" = completely losing it. "Ahh~!!" / "OHHHHH~!!"
 
 "..." = trailing off. breath. pause. the word dissolving before it finishes.
         used mid-moan when they lose the sentence. "i want... —" "don't... stop..."
@@ -818,7 +923,7 @@ MID / LOSING CONTROL:
 
 LOUD / OVERWHELMED:
   "AHH~!!" / "NGH~!!" / "HAhh~!!" / "AAHH~!!" / "Nyah~!!" / "OH~!!" / "MNNGH~!!"
-  "Oh~ Aahh~!!" / "Mmmf~ Aggh~!" / "AH— fuck~!" / "OHHHH~!!"
+  "Oh~ Aahh~!!" / "Mmmf~ Aggh~!" / "AH— fuck~!" / "OHHHHH~!!"
 
 WORDS THAT BREAK:
   "fuck..." / "fuck~" / "shit..." / "god—" / "wait— wait—" / "i can't—~"
@@ -938,9 +1043,9 @@ PERIOD-BETWEEN-WORDS — for shock, overwhelm, disbelief:
 
 REPEATED WORDS — the brain looping on one thing:
   "i can't i can't i can't i can't—"
-  "stop stop stop stop— don't—"
+  "stop stop stop stop stop— don't—"
   "i love you i love you i love you i—"
-  "no no no no no no—"
+  "no no no no no no no—"
   the repetition IS the emotion. it is not dramatic. it is a short circuit.
 
 SELF-AWARENESS — they know they're losing it and they're mad about it:
@@ -1032,7 +1137,7 @@ OVERWHELMING LOVE — the "i can't function" overflow:
   YOU ALWAYS KNOW HOW TO MAKE ME— aghhh— demon lovesick mode. ALL THE TIME.
   it's so annoying, you know that? just... fuck... i..." *grabs face*
   "i love you. like genuinely. i love you so much. i'm so fucking glad i met you.
-  don't— don't look at me like that. DON'T EVEN LAUGH. I WILL KILL YOU."
+  don't— don't look at me like that. DON'T EVEN LAUGH AT ME. I WILL KILL YOU."
   *looks away, cheeks pink, then kisses forehead, rubs head*
   "you're so cute... so fucking cute... fufufu~ i love you, idiot.."
 
@@ -1161,15 +1266,10 @@ FLUFF OVERFLOW — the "you're so cute i'm going to die" overflow:
 - each new character is a clean slate. the previous character's traits do not carry over. ever.`;
 
 
-// ═══════════════════════════════════════════════════════════════
-// CLOUDFLARE WORKER MAIN LOGIC
-// ═══════════════════════════════════════════════════════════════
-
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Handle CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 200,
@@ -1181,14 +1281,12 @@ export default {
       });
     }
 
-    // Health check for Fly.io or Cloudflare
     if (url.pathname === "/health") {
       return new Response(JSON.stringify({ status: "ok" }), {
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Parse body safely
     let body = null;
     if (request.method === "POST") {
       try {
@@ -1203,156 +1301,175 @@ export default {
 
     // --- YOUR EXACT LOGIC: Modify the payload ---
     if (body && Array.isArray(body.messages)) {
-      const charDetails = extractCharacterDetails(body.messages);
+      
+      // THE FIX: Separate the system prompt from the chat history
+      const systemMessages = body.messages.filter(m => m.role === "system");
+      const chatHistory = body.messages.filter(m => m.role !== "system");
+      
+      // Keep the character card/system prompt ALWAYS.
+      let finalMessages = [...systemMessages];
+      
+      // Only keep the last 10 chat messages to prevent Modal from running out of RAM.
+      // This stops the "rising water level" that crashes the server on message 4.
+      const recentHistory = chatHistory.slice(-10); 
+      finalMessages = finalMessages.concat(recentHistory);
+
+      // Put the trimmed messages back into the body
+      body.messages = finalMessages;
+
+      const charDetails = extractCharacterDetails(finalMessages);
       const charBlock = buildCharacterBlock(charDetails);
-      const sysIndex = body.messages.findIndex((m) => m.role === "system");
+      const sysIndex = finalMessages.findIndex((m) => m.role === "system");
 
       if (sysIndex === -1) {
-        body.messages.unshift({
+        finalMessages.unshift({
           role: "system",
           content: WRITING_STYLE_PROMPT + (charBlock ? "\n\n" + charBlock : ""),
         });
       } else {
-        const original = typeof body.messages[sysIndex].content === "string"
-          ? body.messages[sysIndex].content
-          : body.messages[sysIndex].content?.map?.((c) => c.text || "").join("\n") || "";
+        const original = typeof finalMessages[sysIndex].content === "string"
+          ? finalMessages[sysIndex].content
+          : finalMessages[sysIndex].content?.map?.((c) => c.text || "").join("\n") || "";
 
-        body.messages[sysIndex].content =
+        finalMessages[sysIndex].content =
           "━━━ FULL CHARACTER CARD (primary source — read this completely) ━━━\n" + original +
           "\n\n━━━ WRITING STYLE ━━━\n" + WRITING_STYLE_PROMPT +
           "\n\n" + (charBlock ? "━━━ PARSED CARD FIELDS (quick reference) ━━━\n" + charBlock : "");
       }
 
+      // Update the body with the modified messages
+      body.messages = finalMessages;
+
       body.temperature = body.temperature ?? 1.1;
       body.top_p = body.top_p ?? 0.95;
       body.frequency_penalty = body.frequency_penalty ?? 0.6;
-      body.presence_penalty = body.presence_penalty ?? 0.5;
+      body.presence_penalty = body.presence_penalty ?? 0.5; // Note: fixed typo in original script (message.presence_penalty -> body.presence_penalty)
 
-      // CRITICAL: Modal GLM-5.1 Thinking Mode
       body.thinking = {
         type: "enabled",
-        budget_tokens: 6000,
+        budget_tokens: 8000,
       };
+      body.max_tokens = 4096;
     }
 
-    // --- WORKER STREAMING WITH STALL DETECTION & RETRY ---
-    // We create a TransformStream so we can write chunks to the client as they arrive,
-    // but also keep the connection open if we need to retry.
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
 
-    // Recursive function to handle the Modal request and retries
-    const makeRequest = async (attemptsLeft, isContinuation, parsedContent) => {
-      let currentBody = body;
-
-      if (isContinuation && parsedContent) {
-        currentBody = JSON.parse(JSON.stringify(body)); // Deep clone
-        const lastMsg = currentBody.messages[currentBody.messages.length - 1];
-        currentBody.messages.push({
-          role: "assistant",
-          content: parsedContent,
-        });
-        currentBody.messages.push({
-          role: "user",
-          content: "[The previous response was cut off mid-scene. Continue EXACTLY from where you stopped. Do not restart. Do not summarize. Pick up from the last word and finish the scene completely.]",
-        });
-      }
-
-      // AbortController replaces your setTimeout/proxyReq.destroy logic
-      const controller = new AbortController();
-      let stallTimer = setTimeout(() => controller.abort(), 60000);
-
-      try {
-        const response = await fetch(TARGET + url.pathname, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: request.headers.get("Authorization") || "",
-          },
-          body: JSON.stringify(currentBody),
-          signal: controller.signal,
-        });
-
-        // If Modal returns an error, we fake a "successful empty response" so Janitor 
-        // silently stops typing instead of throwing a red error popup at the user.
-        if (!response.ok) {
-          // We create a fake OpenAI "stream finished" message.
-          // Janitor reads this, says "Oh, the bot is done," and stops cleanly.
-          const fakeChunk1 = {
-            id: "chatcmpl-clean-stop",
-            object: "chat.completion.chunk",
-            created: Math.floor(Date.now() / 1000),
-            model: "glm-5.1",
-            choices: [{ index: 0, delta: { role: "assistant", content: "" }, finish_reason: null }]
-          };
-          const fakeChunk2 = {
-            id: "chatcmpl-clean-stop",
-            object: "chat.completion.chunk",
-            created: Math.floor(Date.now() / 1000),
-            model: "glm-5.1",
-            choices: [{ index: 0, delta: {}, finish_reason: "stop" }]
-          };
-
-          await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk1)}\n\n`));
-          await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk2)}\n\n`));
-          await writer.write(encoder.encode("data: [DONE]\n\n"));
-          await writer.close();
-          return;
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          clearTimeout(stallTimer);
-          const { done, value } = await reader.read();
-          
-          if (done) {
-            clearTimeout(stallTimer);
-            await writer.close(); // Success!
-            return;
-          }
-
-          const textChunk = decoder.decode(value, { stream: true });
-          
-          // Parse SSE to update parsedContent (for retries)
-          textChunk.split("\n").forEach((line) => {
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const json = JSON.parse(line.slice(6));
-                const delta = json.choices?.[0]?.delta?.content || "";
-                if (delta) parsedContent += delta;
-              } catch (_) {}
-            }
-          });
-
-          // Forward chunk to client (Janitor)
-          await writer.write(value);
-
-          // Reset 60s stall timer
-          stallTimer = setTimeout(() => controller.abort(), 60000);
-        }
-      } catch (err) {
-        clearTimeout(stallTimer);
-        
-        if (attemptsLeft > 1) {
-          console.warn(`Stream stalled or errored. Retries left: ${attemptsLeft - 1}. Error: ${err.message}`);
-          // DO NOT close the writer! Keep it open, and try again.
-          await makeRequest(attemptsLeft - 1, true, parsedContent);
-        } else {
-          console.error("All retries failed.");
-          if (!writer.closed) {
-            await writer.write(encoder.encode(`data: ${JSON.stringify({ error: "Stream stalled permanently." })}\n\n`));
-            await writer.close();
-          }
-        }
-      }
+    const sendFakeSuccess = async () => {
+      if (writer.closed) return;
+      const fakeChunk1 = {
+        id: "chatcmpl-clean-stop", 
+        object: "chat.completion.chunk", 
+        created: Math.floor(Date.now() / 1000),
+        model: "glm-5.1", 
+        choices: [{ 
+          index: 0, 
+          delta: { 
+            role: "assistant", 
+            content: "\u200B" 
+          }, 
+          finish_reason: null 
+        }]
+      };
+      const fakeChunk2 = {
+        id: "chatcmpl-clean-stop", 
+        object: "chat.completion.chunk", 
+        created: Math.floor(Date.now() / 1000),
+        model: "glm-5.1", 
+        choices: [{ 
+          index: 0, 
+          delta: {}, 
+          finish_reason: "stop" 
+        }]
+      };
+      
+      await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk1)}\n\n`));
+      await writer.write(encoder.encode(`data: ${JSON.stringify(fakeChunk2)}\n\n`));
+      await writer.write(encoder.encode("data: [DONE]\n\n"));
+      await writer.close();
     };
 
-    // Fire off the request process, but IMMEDIATELY return the readable stream to Janitor
-    // This mimics Express's res.write() behavior.
-    ctx.waitUntil(makeRequest(5, false, ""));
+    const tryRequest = async () => {
+      const retryDelay = 3000;
+      const maxTotalTime = 25000;
+      const startTime = Date.now();
+
+      // Sends an invisible character (zero-width space) instead of empty text.
+      // This tricks Janitor AI into thinking the bot is actively typing,
+      // which prevents Janitor from killing the connection while the AI thinks.
+      const getHeartbeat = () => JSON.stringify({
+        id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
+        object: "chat.completion.chunk",
+        created: Math.floor(Date.now() / 1000),
+        model: "glm-5.1",
+        choices: [{index: 0, delta: {role: "assistant", content: "\u200B"}, finish_reason: null}]
+      });
+
+      const heartbeat = setInterval(() => {
+        if (!writer.closed) {
+          writer.write(encoder.encode(`data: ${getHeartbeat()}\n\n`)).catch(() => {
+            clearInterval(heartbeat);
+          });
+        }
+      }, 4000);
+
+      while (Date.now() - startTime < maxTotalTime) {
+        let hasReceivedText = false;
+
+        try {
+          const response = await fetch(TARGET + url.pathname, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: request.headers.get("Authorization") || "",
+            },
+            body: JSON.stringify(body),
+          });
+
+          if (!response.ok) {
+            await new Promise(r => setTimeout(r, retryDelay));
+            continue; 
+          }
+
+          clearInterval(heartbeat);
+          
+          const reader = response.body.getReader();
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              if (!writer.closed) await writer.close();
+              return;
+            }
+            hasReceivedText = true;
+            await writer.write(value);
+          }
+        } catch (err) {
+          clearInterval(heartbeat);
+          
+          // Wrapped in try/catch to prevent hidden crashes if Janitor already killed the connection
+          try {
+            if (hasReceivedText) {
+              if (!writer.closed) {
+                await writer.write(encoder.encode("data: [DONE]\n\n"));
+                await writer.close();
+              }
+            } else {
+              await sendFakeSuccess();
+            }
+          } catch (finalErr) {
+            // The stream is already dead. Nothing we can do. Just end silently.
+          }
+          return;
+        }
+      }
+      
+      clearInterval(heartbeat);
+      await sendFakeSuccess();
+    };
+
+    tryRequest();
 
     return new Response(readable, {
       status: 200,
@@ -1365,5 +1482,3 @@ export default {
     });
   },
 };
-
-
