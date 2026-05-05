@@ -351,7 +351,7 @@ export default {
       }
     };
 
-    tryRequest();
+        ctx.waitUntil(tryRequest());
 
     return new Response(readable, {
       status: 200,
