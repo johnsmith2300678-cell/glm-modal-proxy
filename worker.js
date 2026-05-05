@@ -279,7 +279,7 @@ export default {
     };
 
     const tryRequest = async () => {
-      // Pre-build the payload and heartbeat to save CPU (fixes 1101)
+      // Pre-build strings ONCE to save CPU and prevent Error 1101
       const payloadString = JSON.stringify(body);
       const heartbeatPayload = `data: ${JSON.stringify({
         id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
@@ -289,62 +289,71 @@ export default {
         choices: [{index: 0, delta: {role: "assistant", content: "\u200B"}, finish_reason: null}]
       })}\n\n`;
 
-      // Send invisible heartbeats so Janitor doesn't kill the connection while Modal wakes up
+      // Keep pinging Janitor so it doesn't timeout while Modal wakes up
       const heartbeat = setInterval(() => {
         if (!writer.closed) {
           writer.write(encoder.encode(heartbeatPayload)).catch(() => clearInterval(heartbeat));
         }
       }, 4000);
 
-      let hasReceivedText = false;
-
-      try {
-        const response = await fetch(TARGET + url.pathname, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: request.headers.get("Authorization") || "",
-          },
-          body: payloadString,
-        });
-
-        // IF MODAL REJECTS IT (Too many requests, server error) -> STOP INSTANTLY
-        if (!response.ok) {
-          clearInterval(heartbeat);
-          await sendFakeSuccess();
-          return;
-        }
-
-        // Modal accepted! Stop the heartbeat and stream the text.
-        clearInterval(heartbeat);
-        const reader = response.body.getReader();
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            if (!writer.closed) await writer.close();
-            return;
-          }
-          hasReceivedText = true;
-          await writer.write(value); // Send the actual text to Janitor
-        }
-      } catch (err) {
-        clearInterval(heartbeat);
-        
-        // If it failed BEFORE any text -> Stop instantly so Janitor doesn't timeout
-        // If it failed MID-TEXT -> Just cleanly close the stream
+      // Helper to try connecting to Modal with a 20-second timeout
+      const attemptFetch = async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
         try {
-          if (!hasReceivedText) {
-            await sendFakeSuccess();
-          } else if (!writer.closed) {
-            await writer.write(encoder.encode("data: [DONE]\n\n"));
-            await writer.close();
+          const response = await fetch(TARGET + url.pathname, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: request.headers.get("Authorization") || "",
+            },
+            body: payloadString,
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          return response;
+        } catch (err) {
+          clearTimeout(timeout);
+          throw err;
+        }
+      };
+
+      let hasReceivedText = false;
+      let attempts = 0;
+
+      // Try up to 2 times. Waiting uses 0 CPU, so this won't trigger Error 1101.
+      while (attempts < 2) {
+        attempts++;
+        try {
+          const response = await attemptFetch();
+          
+          // If Modal rejected it (Too many requests, etc), wait 3s and try again
+          if (!response.ok) {
+            await new Promise(r => setTimeout(r, 3000));
+            continue; 
           }
-        } catch (finalErr) {}
-        return;
+
+          // Modal accepted! Stop the heartbeat and stream the text.
+          clearInterval(heartbeat);
+          const reader = response.body.getReader();
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              if (!writer.closed) await writer.close();
+              return;
+            }
+            hasReceivedText = true;
+            await writer.write(value);
+          }
+        } catch (err) {
+          // If the connection timed out or failed, wait 3s and try again
+          await new Promise(r => setTimeout(r, 3000));
+          continue;
+        }
       }
-    };
       
+      // If both attempts fail, cleanly stop Janitor
       clearInterval(heartbeat);
       await sendFakeSuccess();
     };
