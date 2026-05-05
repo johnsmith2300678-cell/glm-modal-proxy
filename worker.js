@@ -255,8 +255,7 @@ export default {
       body.top_p = body.top_p ?? 0.95;
       body.frequency_penalty = body.frequency_penalty ?? 0.6;
       body.presence_penalty = body.presence_penalty ?? 0.5;
-      body.thinking = { type: "enabled", budget_tokens: 8000 };
-      body.max_tokens = 4096;
+      body.thinking = { type: "enabled", budget_tokens: 4000 };
     }
 
     const { readable, writable } = new TransformStream();
@@ -280,75 +279,51 @@ export default {
     };
 
     const tryRequest = async () => {
-      const retryDelay = 3000;
-      const maxTotalTime = 25000;
-      const startTime = Date.now();
+      let hasReceivedText = false;
 
-      const getHeartbeat = () => JSON.stringify({
-        id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
-        object: "chat.completion.chunk",
-        created: Math.floor(Date.now() / 1000),
-        model: "glm-5.1",
-        choices: [{index: 0, delta: {role: "assistant", content: "\u200B"}, finish_reason: null}]
-      });
+      try {
+        const response = await fetch(TARGET + url.pathname, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: request.headers.get("Authorization") || "",
+          },
+          body: JSON.stringify(body),
+        });
 
-      const heartbeat = setInterval(() => {
-        if (!writer.closed) {
-          writer.write(encoder.encode(`data: ${getHeartbeat()}\n\n`)).catch(() => clearInterval(heartbeat));
-        }
-      }, 4000);
-
-      while (Date.now() - startTime < maxTotalTime) {
-        let hasReceivedText = false;
-        try {
-          const response = await fetch(TARGET + url.pathname, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: request.headers.get("Authorization") || "",
-            },
-            body: JSON.stringify(body),
-          });
-
-          if (!response.ok) {
-            await new Promise(r => setTimeout(r, retryDelay));
-            continue;
-          }
-
-          clearInterval(heartbeat);
-          const reader = response.body.getReader();
-          
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              if (!writer.closed) await writer.close();
-              return;
-            }
-            hasReceivedText = true;
-            await writer.write(value);
-          }
-        } catch (err) {
-          clearInterval(heartbeat);
-          try {
-            if (hasReceivedText) {
-              if (!writer.closed) {
-                await writer.write(encoder.encode("data: [DONE]\n\n"));
-                await writer.close();
-              }
-            } else {
-              await sendFakeSuccess();
-            }
-          } catch (finalErr) {}
+        if (!response.ok) {
+          await sendFakeSuccess();
           return;
         }
+
+        const reader = response.body.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            if (!writer.closed) await writer.close();
+            return;
+          }
+
+          hasReceivedText = true;
+          await writer.write(value);
+        }
+      } catch (err) {
+        if (!hasReceivedText) {
+          await sendFakeSuccess();
+          return;
+        }
+
+        if (!writer.closed) {
+           await writer.write(encoder.encode("data: [DONE]\n\n"));
+           await writer.close();
+        }
       }
-      
-      clearInterval(heartbeat);
-      await sendFakeSuccess();
     };
 
     tryRequest();
-
+    
     return new Response(readable, {
       status: 200,
       headers: {
