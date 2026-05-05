@@ -255,8 +255,7 @@ export default {
       body.top_p = body.top_p ?? 0.95;
       body.frequency_penalty = body.frequency_penalty ?? 0.6;
       body.presence_penalty = body.presence_penalty ?? 0.5;
-      body.thinking = { type: "enabled", budget_tokens: 8000 };
-      body.max_tokens = 4096;
+      body.thinking = { type: "enabled", budget_tokens: 5000 };
     }
 
     const { readable, writable } = new TransformStream();
