@@ -279,7 +279,6 @@ export default {
     };
 
     const tryRequest = async () => {
-      // Pre-build strings ONCE to save CPU and prevent Error 1101
       const payloadString = JSON.stringify(body);
       const heartbeatPayload = `data: ${JSON.stringify({
         id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
@@ -289,73 +288,67 @@ export default {
         choices: [{index: 0, delta: {role: "assistant", content: "\u200B"}, finish_reason: null}]
       })}\n\n`;
 
-      // Keep pinging Janitor so it doesn't timeout while Modal wakes up
       const heartbeat = setInterval(() => {
         if (!writer.closed) {
           writer.write(encoder.encode(heartbeatPayload)).catch(() => clearInterval(heartbeat));
         }
       }, 4000);
 
-      // Helper to try connecting to Modal with a 20-second timeout
-      const attemptFetch = async () => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
-        try {
-          const response = await fetch(TARGET + url.pathname, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: request.headers.get("Authorization") || "",
-            },
-            body: payloadString,
-            signal: controller.signal,
-          });
-          clearTimeout(timeout);
-          return response;
-        } catch (err) {
-          clearTimeout(timeout);
-          throw err;
-        }
-      };
+      // 🔧 INCREASED TIMEOUT: GLM-5.1 is huge and can take up to 60s to wake up
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000); 
 
       let hasReceivedText = false;
-      let attempts = 0;
 
-      // Try up to 2 times. Waiting uses 0 CPU, so this won't trigger Error 1101.
-      while (attempts < 2) {
-        attempts++;
-        try {
-          const response = await attemptFetch();
-          
-          // If Modal rejected it (Too many requests, etc), wait 3s and try again
-          if (!response.ok) {
-            await new Promise(r => setTimeout(r, 3000));
-            continue; 
-          }
+      try {
+        const response = await fetch(TARGET + url.pathname, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: request.headers.get("Authorization") || "",
+          },
+          body: payloadString,
+          signal: controller.signal,
+        });
 
-          // Modal accepted! Stop the heartbeat and stream the text.
+        clearTimeout(timeout);
+
+        // 🔧 DIAGNOSTIC: If Modal rejects it, read the error and log it to Cloudflare
+        if (!response.ok) {
           clearInterval(heartbeat);
-          const reader = response.body.getReader();
-          
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              if (!writer.closed) await writer.close();
-              return;
-            }
-            hasReceivedText = true;
-            await writer.write(value);
-          }
-        } catch (err) {
-          // If the connection timed out or failed, wait 3s and try again
-          await new Promise(r => setTimeout(r, 3000));
-          continue;
+          const errorText = await response.text();
+          console.log("MODAL ERROR REJECTED US:", response.status, errorText); // Check Cloudflare Logs!
+          await sendFakeSuccess();
+          return;
         }
+
+        clearInterval(heartbeat);
+        const reader = response.body.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (!writer.closed) await writer.close();
+            return;
+          }
+          hasReceivedText = true;
+          await writer.write(value);
+        }
+      } catch (err) {
+        clearTimeout(timeout);
+        clearInterval(heartbeat);
+        // 🔧 DIAGNOSTIC: Log timeout/connection errors
+        console.log("FETCH FAILED/ABORTED:", err.message); // Check Cloudflare Logs!
+        try {
+          if (!hasReceivedText) {
+            await sendFakeSuccess();
+          } else if (!writer.closed) {
+            await writer.write(encoder.encode("data: [DONE]\n\n"));
+            await writer.close();
+          }
+        } catch (finalErr) {}
+        return;
       }
-      
-      // If both attempts fail, cleanly stop Janitor
-      clearInterval(heartbeat);
-      await sendFakeSuccess();
     };
 
     tryRequest();
