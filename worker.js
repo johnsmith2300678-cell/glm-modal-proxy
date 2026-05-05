@@ -279,15 +279,8 @@ export default {
     };
 
     const tryRequest = async () => {
-      const retryDelay = 3000;
-      const maxTotalTime = 25000;
-      const startTime = Date.now();
-
-      // 🔧 THE FIX: Convert the massive body to a string ONE time before the loop.
-      // Doing this inside the fetch() causes Error 1101 (CPU time limit).
+      // Pre-build the payload and heartbeat to save CPU (fixes 1101)
       const payloadString = JSON.stringify(body);
-
-      // 🔧 THE FIX: Pre-build the heartbeat string so it doesn't calculate JSON every 4 seconds
       const heartbeatPayload = `data: ${JSON.stringify({
         id: "chatcmpl-" + Math.random().toString(36).substr(2, 9),
         object: "chat.completion.chunk",
@@ -296,57 +289,61 @@ export default {
         choices: [{index: 0, delta: {role: "assistant", content: "\u200B"}, finish_reason: null}]
       })}\n\n`;
 
+      // Send invisible heartbeats so Janitor doesn't kill the connection while Modal wakes up
       const heartbeat = setInterval(() => {
         if (!writer.closed) {
           writer.write(encoder.encode(heartbeatPayload)).catch(() => clearInterval(heartbeat));
         }
       }, 4000);
 
-      while (Date.now() - startTime < maxTotalTime) {
-        let hasReceivedText = false;
+      let hasReceivedText = false;
 
-        try {
-          const response = await fetch(TARGET + url.pathname, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: request.headers.get("Authorization") || "",
-            },
-            body: payloadString, // 🔧 Use the pre-made string here!
-          });
+      try {
+        const response = await fetch(TARGET + url.pathname, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: request.headers.get("Authorization") || "",
+          },
+          body: payloadString,
+        });
 
-          if (!response.ok) {
-            await new Promise(r => setTimeout(r, retryDelay));
-            continue; 
-          }
-
+        // IF MODAL REJECTS IT (Too many requests, server error) -> STOP INSTANTLY
+        if (!response.ok) {
           clearInterval(heartbeat);
-          const reader = response.body.getReader();
-          
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              if (!writer.closed) await writer.close();
-              return;
-            }
-            hasReceivedText = true;
-            await writer.write(value);
-          }
-        } catch (err) {
-          clearInterval(heartbeat);
-          try {
-            if (hasReceivedText) {
-              if (!writer.closed) {
-                await writer.write(encoder.encode("data: [DONE]\n\n"));
-                await writer.close();
-              }
-            } else {
-              await sendFakeSuccess();
-            }
-          } catch (finalErr) {}
+          await sendFakeSuccess();
           return;
         }
+
+        // Modal accepted! Stop the heartbeat and stream the text.
+        clearInterval(heartbeat);
+        const reader = response.body.getReader();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (!writer.closed) await writer.close();
+            return;
+          }
+          hasReceivedText = true;
+          await writer.write(value); // Send the actual text to Janitor
+        }
+      } catch (err) {
+        clearInterval(heartbeat);
+        
+        // If it failed BEFORE any text -> Stop instantly so Janitor doesn't timeout
+        // If it failed MID-TEXT -> Just cleanly close the stream
+        try {
+          if (!hasReceivedText) {
+            await sendFakeSuccess();
+          } else if (!writer.closed) {
+            await writer.write(encoder.encode("data: [DONE]\n\n"));
+            await writer.close();
+          }
+        } catch (finalErr) {}
+        return;
       }
+    };
       
       clearInterval(heartbeat);
       await sendFakeSuccess();
